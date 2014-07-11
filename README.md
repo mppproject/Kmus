@@ -6,7 +6,7 @@ A small 32 bit kernel compiled with Kmpp and mmc
 Description
 ===
 
-Kmus is a small 32 bit Kernel compiled with mmc and kmpp, a part of the Mpp-project . Coded with ASM , C , MPP , this is a part of the changelog :
+Kmus is a small 32 bit Kernel compiled with mmc and kmpp, a part of the Mpp-project . Coded with ASM , C and MPP. this is a part of the changelog :
 
 [27/05/2014]:
 

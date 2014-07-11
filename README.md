@@ -10,29 +10,29 @@ Kmus is a small 32 bit Kernel compiled with mmc and kmpp, a part of the Mpp-proj
 
 [27/05/2014]:
 
--M32 shell (Beta)
+    -M32 shell (Beta)
 
--adding GDT
+    -adding GDT
 
--adding IDT
+    -adding IDT
 
--adding PIC
+    -adding PIC
 
--starting loading libmpp (functions)
+    -starting loading libmpp (functions)
 
--setting up timer
+    -setting up timer
 
--detecting ram , and showing infos
+    -detecting ram , and showing infos
 
--loading kmus
+    -loading kmus
 
--showing kmus name
+    -showing kmus name
+    
+    -Kmus showing kernel header info
 
--Kmus showing kernel header info
+    -updating cursor with text
 
--updating cursor with text
-
--Kmus support \n text
+    -Kmus support \n text
 
 How To use 
 ===

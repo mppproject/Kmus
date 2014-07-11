@@ -52,3 +52,5 @@ then write :
     $ make compil-32
   
 To generate a iso file you'll need the grub-mkrescue .
+
+kmpp is supporting the .mh header file , so you can include both .h or .mh files

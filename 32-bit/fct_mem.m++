@@ -1,0 +1,61 @@
+#include <sys.h>
+#include <mem.h>
+#include <conio.h>
+#include <lib.h>
+extern unsigned long taille_ram;
+
+unsigned long count_memory(void)
+{
+	register unsigned long *mem;
+	unsigned long mem_count, mem_end, bse_end, a;
+	unsigned short memkb;
+	unsigned char irq1, irq2;
+
+
+	irq1=inb(0x21);
+	irq2=inb(0xA1);
+
+	outb(0x21, 0xFF);
+	outb(0xA1, 0xFF);
+
+	mem_count=0;
+	memkb=0;
+
+	asm volatile ("wbinvd");
+
+	do
+	{
+		memkb++;
+		mem_count+=1024*1024;
+		mem=(unsigned long*)mem_count;
+
+		a=*mem;
+
+		*mem=0x55AA55AA;
+
+		asm("":::"memory");
+		if(*mem!=0x55AA55AA)
+			mem_count=0;
+		else
+		{
+			*mem=0xAA55AA55;
+			asm("":::"memory");
+			if(*mem!=0xAA55AA55)
+				mem_count=0;
+		}
+
+		asm("":::"memory");
+		*mem=a;
+	} while(memkb<4096 && mem_count!=0);
+
+	mem_end=memkb<<10;
+	mem=(unsigned long*)0x413;
+	bse_end=((*mem)&0xFFFF)<<6;
+
+	outb(0x21, irq1);
+	outb(0xA1, irq2);
+
+	return mem_end;
+}
+
+

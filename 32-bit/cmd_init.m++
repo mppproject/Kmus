@@ -1,0 +1,76 @@
+#include <types.h>
+#include <sys.h>
+#include <kbd.h>
+#include <conio.h>
+#include <string.h>
+#include <mem_ops.h>
+#include <lib.h>
+#include "include/so.mh" /* mpp header */
+#include <kernel.h>
+#include <timer.h>
+#include <floppy.h>
+#include <fat.h>
+#include <conio.h>
+#include <string.h>
+#include <mem_ops.h>
+#include <lib.h>
+#include <mem.h>
+unsigned char sc=0;
+char got_command=0;
+unsigned char ptr=0;
+unsigned char maxptr=0;
+khawi terminal_writestring(const char* data);
+
+
+void getcmd(char * command)
+{
+/*
+   while (!got_command)
+   {
+      sc = getSC();
+      if (sc==0xE0)
+      {		
+	 sc=getSC();
+      }
+      else sc--;
+
+      switch(sc){
+	 case 0x1B : terminal_writestring("test\n");break;
+
+	 case 0x0D : terminal_writestring("test\n");break;
+
+	 case 0x44 : terminal_writestring("test\n");break;
+
+	 case 0x45 : terminal_writestring("test\n");break;
+
+	 case 0x39 : terminal_writestring("test\n");break;
+
+	 case 0x35 : terminal_writestring("test\n");break;
+	 case 0x29 : terminal_writestring("test\n");break;
+	 case 0xB5 : terminal_writestring("test\n");break;
+	 case 0xA9 : terminal_writestring("test\n");break;
+
+	 case 0x1C : terminal_writestring("test\n");break;
+	 case 0x9C : terminal_writestring("test\n");break;
+
+	 case 0x37 : terminal_writestring("test\n");break;
+	 case 0xB7 : terminal_writestring("test\n");break;
+
+	 default : break;
+
+      }
+   }
+   */
+}
+
+
+void got_enter()
+{
+   got_command=1;
+}
+
+void got_backspace()
+{
+
+}
+

@@ -1,0 +1,183 @@
+#include "../include/system.h"
+#include "kbd.h"
+#include "../screen/screen.h"
+
+
+unsigned char key_pressed;
+unsigned char key_released;
+int ls_key = 8;
+int col_full1 = 0;
+int col_full2 = 0;
+/* key status track */
+unsigned char key_status = 0x0;
+char kmus1[] = "[kmus]$ ";
+void ktabf_str(const char* data);
+void kktab (const char *format, ...);
+unsigned char num_shift[10] = {')', '!', '@', '#', '$', '%', '^', '&', '*', '('};
+void ktabf(unsigned char c, unsigned char forecolour, unsigned char backcolour, int x, int y);
+void shift_char(unsigned char *c) {
+  if (*c >= '0' && *c <= '9') {
+    *c = num_shift[*c - '0'];
+  }
+  else {
+    switch (*c) {
+    case '`':
+      *c = '~';
+      break;
+    case '-':
+      *c = '_';
+      break;
+    case '=':
+      *c = '+';
+      break;
+    case '[':
+      *c = '{';
+      break;
+    case ']':
+      *c = '}';
+      break;
+    case '\\':
+      *c = '|';
+      break;
+    case ';':
+      *c = ':';
+      break;
+    case '\'':
+      *c = '"';
+      break;
+    case ',':
+      *c = '<';
+      break;
+    case '.':
+      *c = '>';
+      break;
+    case '/':
+      *c = '?';
+      break;
+    default:
+      break;
+    }
+
+  }
+}
+
+void turn_keyboard_light(unsigned char cmd)
+{
+  while (1) {
+    if ((inportb(i8042_REG_CTL) & 2) == 0)
+      break;
+  }
+
+  outportb(i8042_REG_DATA, 0xED);
+  outportb(i8042_REG_DATA, cmd & 0x7);
+}
+
+/* Handle the keyboard interrupt */
+unsigned char keyboard_handler()
+{
+  unsigned char scan_code;
+
+  scan_code = inportb(i8042_REG_DATA);
+
+  if (scan_code & 0x80) {
+    /* key released */
+
+    key_released = kbdus[scan_code & 0x7F];
+    switch (key_released) {
+    case CONTROL:
+      key_status &= ~M_CONTROL;
+      break;
+    case ALT:
+      key_status &= ~M_ALT;
+      break;
+    case LEFT_SHIFT:
+      key_status &= ~M_L_SHIFT;
+      break;
+    case RIGHT_SHIFT:
+      key_status &= ~M_R_SHIFT;
+      break;
+    case CAPS_LOCK:
+      key_status &= ~M_CAPS_LOCK;
+      turn_keyboard_light(key_status);
+      break;
+    case SCROLL_LOCK:
+      key_status &= ~M_SCROLL_LOCK;
+      turn_keyboard_light(key_status);
+      break;
+    case NUMBER_LOCK:
+      key_status &= ~M_NUMBER_LOCK;     
+      turn_keyboard_light(key_status);
+      break;
+    default:
+      break;
+    }
+
+  }
+  else {
+    /* key pressed 
+       if you hold a key, you will get
+       repeated key press interrupt
+    */
+    
+    key_pressed = kbdus[scan_code];
+    
+    switch (key_pressed) {
+    case CONTROL:
+      key_status |= M_CONTROL;
+      break;
+    case ALT:
+      key_status |= M_ALT;
+      break;
+    case LEFT_SHIFT:
+      key_status |= M_L_SHIFT;
+      break;
+    case RIGHT_SHIFT:
+      key_status |= M_R_SHIFT;
+      break;
+    case CAPS_LOCK:
+      key_status |= M_CAPS_LOCK;
+      turn_keyboard_light(key_status);
+      break;
+    case SCROLL_LOCK:
+      key_status |= M_SCROLL_LOCK;
+      turn_keyboard_light(key_status);
+      break;
+    case NUMBER_LOCK:
+      key_status |= M_NUMBER_LOCK;
+      turn_keyboard_light(key_status);
+      break;
+    default:
+      break;
+    }
+
+    /* test if shift or capslock pressed when press a character*/
+    if ((key_status & M_CAPS_LOCK) ^ (key_status & (M_L_SHIFT | M_R_SHIFT))) {
+      if (key_pressed >= 'a' &&  key_pressed <= 'z') {
+        key_pressed -= 32;
+      }
+
+      /* shift up character */
+      if (key_status & (M_L_SHIFT | M_R_SHIFT)) {
+        shift_char(&key_pressed);
+      }
+        
+    }
+
+    /* print screen the pressed key */
+    if (key_pressed == '\n'){
+      return '\n';
+    }
+    else {
+      ktabf(key_pressed,15,0,ls_key+2,22);
+      ktabf(key_pressed,15,0,43,0);
+      return key_pressed;
+    }
+  
+  }
+}
+
+
+void keyboard_install()
+{
+  //irq_install_handler(1, keyboard_handler);
+}

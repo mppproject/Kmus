@@ -1,0 +1,451 @@
+#if !defined(__cplusplus)
+#include <stdbool.h> /* C doesn't have booleans by default. */
+#endif
+#include <stddef.h>
+#include <stdint.h>
+#include <errno.h>
+#include <sys/io.h>
+#include "include/so.mh" /* mpp header */
+#include <types.h>
+#include <sys.h>
+#include <kbd.h>
+#include <kernel.h>
+#include <timer.h>
+#include <floppy.h>
+#include <fat.h>
+#include <conio.h>
+#include <stdint.h>
+#include <sys/io.h>
+//#include <string.h>
+#include <mem_ops.h>
+#include <lib.h>
+#include <mem.h>
+#include <vesa.h>
+#include "screen/screen.h"
+#define MIN_X 0
+#define MIN_Y 0
+#define MAX_X 79
+#define MAX_Y 49
+#undef errno
+extern int errno;
+/*
+===================================
+		    Declarations
+===================================
+
+*/
+khawi getcmd(char * command);
+_7arf getSC(void);
+khawi kktab (const char *format, ...);
+khawi kktab_t (const char *format, ...);
+khawi set_timer(float freq);
+khawi delay(unsigned int ms);
+unsigned long count_memory(void);
+short e0=0;
+unsigned char ScanCode;
+unsigned char c;
+unsigned int finished = 1;
+unsigned int time_h = 0;
+unsigned int time_m = 0;
+unsigned int time_s = 0;
+unsigned int kernelbase = 0x100000;
+unsigned long * kernelsize=(unsigned long * )0x90FF2;
+unsigned long ram_size;
+vbe_info * vbe=(vbe_info *)VESABASE;
+khawi gdt_install();
+khawi init_task();
+//khawi init_idt(khawi);
+khawi PIC_init(khawi);
+khawi kmus_m(const char *msg);
+khawi kmus_mln(const char *msg);
+khawi puts(unsigned char *text);
+_7arf _kattr = 0x1F;
+khawi ktab_ttop(ra9m color,const char *format, ...);
+khawi itoa (char *buf, int base, int d);
+khawi _screen_cls();
+unsigned char keyboard_handler();
+khawi init_shell();
+khawi timer_install();
+/*
+===================================
+		end of Declarations
+===================================
+
+*/
+
+
+ 
+uint8_t make_color(enum vga_color fg, enum vga_color bg)
+{
+	rja3 fg | bg << 4;
+}
+ 
+uint16_t make_vgaentry(char c, uint8_t color)
+{
+	uint16_t c16 = c;
+	uint16_t color16 = color;
+	rja3 c16 | color16 << 8;
+}
+
+size_t strlen(const char* str)
+{
+	size_t ret = 0;
+	_7ta ( str[ret] != 0 )
+		ret++;
+	return ret;
+}
+
+ 
+ 
+size_t terminal_row = MIN_Y;
+size_t terminal_column = MIN_X;
+uint8_t terminal_color;
+uint16_t* terminal_buffer;
+
+khawi terminal_initialize()
+{
+	terminal_row = 0;
+	terminal_column = 0;
+	terminal_color = make_color(COLOR_LIGHT_GREY, COLOR_BLACK);
+	terminal_buffer = (uint16_t*) 0xB8000;
+	lkoul ( size_t y = 0; y < VGA_HEIGHT; y++ )
+	{
+		lkoul ( size_t x = 0; x < VGA_WIDTH; x++ )
+		{
+			const size_t index = y * VGA_WIDTH + x;
+			terminal_buffer[index] = make_vgaentry(' ', terminal_color);
+
+		}
+	}
+}
+ 
+khawi terminal_setcolor(uint8_t color)
+{
+	terminal_color = color;
+}
+ 
+khawi terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
+{
+	const size_t index = y * VGA_WIDTH + x;
+	terminal_buffer[index] = make_vgaentry(c, color);
+}
+khawi update_cursor(ra9m row, ra9m col)
+{
+    unsigned short position=(row*80) + col;
+ 
+    // cursor LOW port to vga INDEX register
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (unsigned char)(position&0xFF));
+    // cursor HIGH port to vga INDEX register
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (unsigned char )((position>>8)&0xFF));
+}
+khawi scrollingup (unsigned int nline)
+{
+  unsigned char* video, *tmp;
+
+  lkoul(video=(unsigned char*)RAMSCREEN ; video<(unsigned char*)RAMSCREEN+160 ;video++)
+      {
+      *video++;
+      *video=0x0F;
+      }
+  lkoul(video=(unsigned char*)RAMSCREEN+160 ; video<(unsigned char*)RAMSCREEN+320 ;video++)
+        {
+	      *video++='\xc4';
+	      *video=0x04;
+	}
+			  
+lkoul(video=(unsigned char*)RAMSCREEN+320 ; video<(unsigned char*)SCREENLIM ;video++)
+    {
+      tmp = (unsigned char*) (video+nline*160);
+
+
+      ila(tmp<(unsigned char*)SCREENLIM)
+	{
+	  *video++ = *tmp++;
+	  *video=*tmp;
+
+	}
+      oula
+	{
+	  *video++ = 0;
+	  *video=_kattr;
+	}
+
+    }
+
+  terminal_row-=nline;
+  ila(terminal_row<MIN_Y) terminal_row=MIN_Y;
+
+}
+khawi top_kc(ra9m color, _7arf c){
+	terminal_putentryat(c, color, 0, 19);
+}
+
+khawi terminal_putchar(_7arf c)
+{
+	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
+	ila ( ++terminal_column == VGA_WIDTH )
+	{
+		terminal_column = 0;
+		ila ( ++terminal_row == VGA_HEIGHT )
+		{
+			terminal_row = 0;
+		}
+	}
+	oula
+	{
+		ila(c == '\r')
+    	{
+        	terminal_column = 0;
+    	}
+		ila (c == '\n'){
+
+			terminal_column = 0;
+			terminal_row++;
+		}
+		oula{
+			ila (terminal_column > VGA_WIDTH)
+			{
+	  			terminal_column=0;
+	  			terminal_row++;
+			}
+		}
+		ila (c == NULL){
+			terminal_row = 0;
+			terminal_column = 0;
+		}
+	}
+	/* Handle a backspace, by moving the cursor back one space */
+    ila(c == 0x08)
+    {
+        ila(terminal_column != 0) terminal_column--;
+    }
+    /* Handles a tab by incrementing the cursor's x, but only
+    *  to a point that will make it divisible by 8 */
+    oula ila(c == 0x09)
+    {
+        terminal_column = (terminal_column + 8) & ~(8 - 1);
+    }
+    ila(terminal_column >= 80)
+    {
+        terminal_column = 0;
+        terminal_row++;
+    }
+    ila (terminal_row>VGA_HEIGHT - 1){
+    	scrollingup(1);
+    	update_cursor(VGA_HEIGHT -1, 0);
+    	make_vgaentry(' ', terminal_color);
+    }
+	/*
+	outbp(0x3D4, 0x0F);
+  	outbp(0x3D5, (pos()/2)&0xFF);
+  	outbp(0x3D4, 0x0E);
+  	outbp(0x3D5, ((pos()/2)>>8)&0xFF);
+  	*/
+
+}
+ 
+khawi terminal_writestring(const char* data)
+{
+	size_t datalen = strlen(data);
+	for ( size_t i = 0; i < datalen; i++ )
+		terminal_putchar(data[i]);
+}
+/*
+	ktab functions
+*/
+khawi ktab_7mar(const char* msg){
+	terminal_setcolor(12);
+	kktab(msg);
+	terminal_setcolor(15);
+	kktab("\n");
+}
+khawi wari_sala(){
+	terminal_setcolor(10);
+	terminal_writestring("[sala] : ");
+	terminal_setcolor(15);
+}
+khawi ktab_action(const char* msg){
+	terminal_setcolor(3);
+	terminal_writestring("[action] : ");
+	terminal_setcolor(15);
+	kktab(msg);
+	kktab("\n");
+}
+khawi ktab_bda(const char* msg){
+	terminal_setcolor(12);
+	terminal_writestring("[bda] : ");
+	terminal_setcolor(15);
+	kktab(msg);
+	kktab("\n");
+}
+khawi ktab_chargi(const char* msg){
+	terminal_setcolor(3);
+	terminal_writestring("[chargi] : ");
+	terminal_setcolor(15);
+	kktab(msg);
+	kktab("");
+}
+khawi ktab_sala(const char* msg){
+	terminal_setcolor(10);
+	terminal_writestring("[sala]");
+	terminal_setcolor(15);
+	kktab(msg);
+	kktab("\n");
+}
+khawi header_info(){
+
+	kktab("TIME : %d:%d%d   |   RAM : %d MO   |   KEY : \n",time_h,time_m,time_s,ram_size/1024);
+}
+unsigned int memory(){
+	
+	unsigned int total;
+    unsigned char lowmem, highmem;
+ 
+    outb(0x70, 0x30);
+    lowmem = inb(0x71);
+    outb(0x70, 0x31);
+    highmem = inb(0x71);
+ 
+    total = lowmem | highmem << 8;
+    return total;
+    
+}
+khawi ktab_top( ra9m colour, const char *string )
+{
+    volatile char *video = (volatile char*)0xB8000;
+    while( *string != 0 )
+    {
+        *video++ = *string++;
+        *video++ = colour;
+    }
+}
+khawi screen_cls()
+{
+	memset(terminal_buffer, ' ', VGA_WIDTH * VGA_HEIGHT);
+	terminal_row = 0;
+	terminal_column = 0;
+}
+khawi irq_01() {
+        outb(0x20, 0x20);   // Send EOI
+        ScanCode = inb(0x60);     
+        ila((ScanCode & 128) == 128){
+        	ktab_bda("no keybord event");// Released
+        }
+                 
+        oula{
+        	ktab_bda("keybord event detected !");// Pressed
+        }
+                
+}
+
+khawi header(){
+	
+	kktab("                                                               \n");
+	kktab("           |--V 0.0.1----------------------------------------| \n");
+	kktab("           |         __  __ _______ _______ _______          | \n");
+	kktab("           |        |  |/  |   |   |   |   |     __|         | \n");
+	kktab("           |        |     <|       |   |   |__     |         | \n");
+	kktab("           |        |__|\\__|__|_|__|_______|_______|         | \n");
+	kktab("           |                      [+]www.mpp-project.eu      | \n");
+	kktab("           |                      [+]naper: contact@naper.eu | \n");
+	kktab("           |-------------------------------------------------| \n");
+	kktab("                                                               \n");
+
+}
+
+ 
+#if defined(__cplusplus)
+extern "C" 
+#endif
+
+khawi bda()
+{
+	unsigned int i , j;
+	terminal_initialize();
+	ram_size = count_memory();
+	header_info(); 
+	/* printing a text :D */
+
+	ktab_bda("loading Kmus ...");
+	wari_sala();kktab("Kmus loaded at  0x%x , size of kernel = %d \n", kernelbase, *kernelsize);
+
+	/* loading mem info */
+
+	unsigned int m = memory();
+	wari_sala();kktab("Ram detected , showing it on header info \n");
+	ram_size = count_memory(); 
+
+	/* temp:loading keyb */
+
+	irq_01();
+
+	/* updating cursor */
+
+	update_cursor(19, 0);
+
+	/* loading GDT */
+
+	ktab_chargi("loading GDT ..        ");
+	gdt_install();
+	ktab_sala("");
+
+	/* loading tasks */
+
+	ktab_chargi("loading tasks ..      ");
+	//load_tasks();
+	ktab_sala("");
+
+	/* loading IDT */
+
+	ktab_chargi("loading IDT ..        ");
+	//init_idt();
+	ktab_sala("");
+
+	/* loading pic */
+
+	ktab_chargi("loading PIC ..        ");
+	PIC_init();
+	ktab_sala("");
+
+	/* loading ISR */
+
+
+
+	/* setting timer */
+	ktab_chargi("setting up timer ..   ");
+	set_timer(FREQ_SYS);
+	timer_install();
+
+
+	/* loading mpp lib */
+	ktab_chargi("loading libmpp ..     ");
+	ktab_sala("");
+
+	/* testing 10 sec */
+
+
+		
+	/* first : ktab and _9ra */
+
+	/* start doing */
+	/* testing scroling *
+	ktab_action("waiting before tesing scroling up ^_^ \n");
+	lkoul(j=0;j<2000-2;j++){
+		ktab_action("testing scroling up                                      ");
+		ktab_bda("updating cursor at end of line                              ");
+
+	}
+	*/
+	header();
+	puts("\n\n\n");
+
+
+	/* loading M32 shell */
+	init_shell();
+	//_screen_cls(); /* clear screen */
+	//_7ta(1);
+	lkoul(;;);
+	
+}

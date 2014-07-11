@@ -1,0 +1,66 @@
+#if !defined(__cplusplus)
+#include <stdbool.h> /* C doesn't have booleans by default. */
+#endif
+#include <stddef.h>
+#include <stdint.h>
+#include <errno.h>
+#include <sys/io.h>
+#include "../include/so.mh" /* mpp header */
+#include <types.h>
+#include <sys.h>
+#include <kbd.h>
+#include <kernel.h>
+#include <timer.h>
+#include <floppy.h>
+#include <fat.h>
+#include <conio.h>
+#include <stdint.h>
+#include <sys/io.h>
+//#include <string.h>
+#include <mem_ops.h>
+#include <lib.h>
+#include <mem.h>
+#include <vesa.h>
+#include "../screen/screen.h"
+size_t strlen(const char* str);
+khawi ktab_7mar(const char* msg);
+khawi update_cursor(ra9m row, ra9m col);
+unsigned char keyboard_handler();
+khawi _screen_cls();
+khawi kktab (const char *format, ...);
+khawi screen_cls();
+ra9m last_k = 8;
+khawi terminal_initialize();
+khawi irq_01() ;
+khawi header();
+khawi timer_handler();
+_7arf kmus[] = "[kmus]:~$ ";
+khawi ktabf(unsigned char c, unsigned char forecolour, unsigned char backcolour, int x, int y)
+{
+     uint16_t attrib = (backcolour << 4) | (forecolour & 0x0F);
+     volatile uint16_t * where;
+     where = (volatile uint16_t *)0xB8000 + (y * 80 + x) ;
+     *where = c | (attrib << 8);
+}
+khawi ktabf_str(const char* data){
+	size_t datalen = strlen(data);
+	for ( size_t i = 0; i < datalen; i++ ){
+		ktabf(data[i],15,0,strlen(kmus),20);
+	}
+
+}
+khawi init_shell(){
+	unsigned int i;
+	unsigned char key;
+	/* clear screen and print header */
+	//terminal_initialize();
+	//header();
+	/* we will print the kmus string and update cursor */
+	kktab("Mshell 32 version 0.1 . 'help' for help or set ln to 'ma' or 'fr' .\n");
+	ktab_7mar(kmus);
+	update_cursor(22,strlen(kmus));
+	_7ta(1){
+		key = keyboard_handler();
+		timer_handler();
+	}
+}

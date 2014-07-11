@@ -1,0 +1,30 @@
+#ifndef _XOSMALLOC_H_
+#define _XOSMALLOC_H_
+
+typedef struct _bloc
+{
+  unsigned long base;    
+  unsigned long size;
+  struct _bloc * next;
+} bloc;
+
+
+typedef struct _super_bloc
+{
+  bloc * free_chain;
+  bloc * used_chain;
+  bloc * avl_chain;
+} super_bloc;
+
+typedef struct _page
+{
+  bloc data[341];
+  struct _page * next;
+} page;
+
+
+
+
+
+
+#endif

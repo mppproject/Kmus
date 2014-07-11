@@ -1,0 +1,151 @@
+
+
+#include <types.h>
+#include <sys.h>
+#include <conio.h>
+#include <lib.h>
+#include <floppy.h>
+#include <xosdbg.h>
+#include <kbd.h>
+#include <panic.h>
+#include <scheduler.h>
+extern volatile unsigned long int tick_count;
+
+
+void kktab (const char *format, ...);
+void idt_default_int(void) {
+  kktab("Interruption non assigné\n");
+}
+
+void idt_syscall(void) {
+  kktab("XosKERnel32 ::  SysCall\n");
+ }
+
+  
+void idt_int0(void) {
+  kktab(" Divide Error\n");
+  while(1);
+}
+
+void idt_int1(void) {
+  kktab(" Debug exception\n");
+  while(1);
+}
+void idt_int2(void) {
+  kktab(" unknown error\n");
+
+  while(1);
+}
+void idt_int3(void) {
+  kktab(" Breakpoint\n");
+
+  while(1);
+}
+void idt_int4(void) {
+  kktab(" Overflow\n");
+
+  while(1);
+}
+void idt_int5(void) {
+  kktab(" Bounds check\n");
+
+  while(1);
+}
+void idt_int6(void) {
+  kktab(" Invalid opcode\n");
+
+  while(1);
+}
+void idt_int7(void) {
+  kktab(" Coprocessor not available\n");
+
+  while(1);
+}
+void idt_int8(void) {
+  kktab(" Double fault\n");
+
+  while(1);
+}
+void idt_int9(void) {
+  kktab(" Coprocessor Segment overrun\n");
+
+  while(1);
+}
+void idt_int10(void) {
+  kktab(" Invalid TSS\n");
+
+  while(1);
+}
+void idt_int11(void) {
+  kktab(" Segment not present\n");
+
+  while(1);
+}
+void idt_int12(void) {
+  kktab(" Stack exception\n");
+
+  while(1);
+}
+
+void idt_int13(void) {
+    while(1);
+}
+
+void idt_int14(void) {
+  while(1);
+}
+
+void idt_int15(void) {
+  kktab(" Unknown error\n");
+
+  while(1);
+}
+
+void idt_int16(void) {
+  kktab(" Coprocessor error\n");
+
+  while(1);
+}
+
+void idt_int17(void) {
+  kktab("i17 ");
+  while(1);
+}
+
+void idt_int18(void) {
+  kktab("i18 ");
+  while(1);
+}
+
+
+
+
+
+
+void idt_irq0(void) {
+
+}
+void idt_irq1(void) {
+
+}
+void idt_irq2(void) {
+  kktab("2");
+}
+void idt_irq3(void) {
+  kktab("3");
+}
+void idt_irq4(void) {
+  kktab("4");
+}
+void idt_irq5(void) {
+  kktab("5");
+}
+void idt_irq6(void) {
+
+}
+void idt_irq7(void) {
+  kktab("7");
+}
+void idt_irq8(void) {
+  kktab("8");
+}

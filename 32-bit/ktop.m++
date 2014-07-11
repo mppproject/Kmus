@@ -1,0 +1,70 @@
+#include <stdarg.h>
+#include <conio.h>
+#include "include/so.mh" /* mpp header */
+#define MAXBUF (sizeof(long int) * 8)
+void putcar(char c);
+void putch(unsigned char c);
+khawi top_kc(ra9m color, _7arf c);
+khawi terminal_putchar(char c);
+khawi itoa (char *buf, int base, int d);
+   static void printnum(u, base)
+   register unsigned long  u;      /* number to print */
+   register int            base;
+{
+   char    buf[MAXBUF];    /* build number here */
+   register char * p = &buf[MAXBUF-1];
+   static char digs[] = "0123456789abcdef";
+
+   do {
+      *p-- = digs[u % base];
+      u /= base;
+   } while (u != 0);
+
+   while (++p != &buf[MAXBUF])
+      top_kc(15,*p);
+}
+
+
+
+void ktab_ttop(ra9m color,const char *format, ...){
+   va_list ap;
+   int c;
+   char buf[20];
+   va_start(ap, format);
+
+   while ((c = *format++) != 0)
+   {
+      if (c != '%')
+    top_kc (color,c);
+      else
+      {
+    char *p;
+
+    c = *format++;
+    switch (c)
+    {
+       case 'd':
+       case 'u':
+       case 'x':
+          itoa (buf, c, va_arg(ap, int));
+          p = buf;
+          while (*p) top_kc (color,*p++);
+          
+          break;
+
+       case 's':
+          p = va_arg(ap, char*);
+          if (! p)
+        p = "(null)";
+
+          while (*p) top_kc (color,*p++);
+          break;
+
+       default:
+          top_kc (color,va_arg(ap, int));
+          break;
+    }
+      }
+   }
+   va_end(ap);
+}

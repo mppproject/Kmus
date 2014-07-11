@@ -1,0 +1,55 @@
+#include "include/system.h"
+#include "screen/screen.h"
+
+
+#define i8254_CTL  0x43
+#define i8254_CH1_DATA 0x40
+#define i8254_CH2_DATA 0x41
+#define i8254_CH3_DATA 0x42
+
+/* Keep track of how many ticks has passed */
+
+int timer_ticks = 0;
+void kktab (const char *format, ...);
+
+/* Handles the timer. In this case, it's very simple: We
+*  increment the 'timer_ticks' variable every time the
+*  timer fires. By default, the timer fires 18.222 times
+*  per second. Why 18.222Hz? Some engineer at IBM must've
+*  been smoking something funky 
+*/
+
+void timer_handler() 
+{
+	/* Increment our tick count */
+	timer_ticks++;
+
+	/* Every 100 clocks ( almost 1 second), 
+	   we will display a message on the screen
+	*/
+
+	/*
+	if (timer_ticks % 10 == 0) {
+		kktab("One second has passed\n");
+	}
+	*/
+
+}
+
+void timer_phase(int hz)
+{
+	int divisor = 1193180 / hz;          /* calculate our divisor */
+	outportb(i8254_CTL, 0x36);                /* set command byte 0x36 */
+	outportb(i8254_CH1_DATA, divisor & 0xFF);      /* set low byte of divisor */
+	outportb(i8254_CH1_DATA, divisor >> 8 & 0xFF); /* set high byte of divisor */
+	
+}
+
+void timer_install()
+{
+	timer_phase(100);
+	/* install our cute timer hander */
+	//irq_install_handler(0, timer_handler);
+
+}
+

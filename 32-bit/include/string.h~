@@ -1,0 +1,5 @@
+#define NULL 0 
+int strcmp(const char * cs,const char * ct);
+char * strsep(char **s, const char *ct);
+int strlen(const char * s);
+char * strchr(const char * s, int c);

@@ -1,0 +1,22 @@
+/*
+*
+*
+*	KMUS
+*
+*
+*/
+
+
+[27/05/2014]:
+
+-adding GDT
+-adding IDT
+-adding PIC
+-starting loading libmpp (functions)
+-setting up timer
+-detecting ram , and showing infos
+-loading kmus
+-showing kmus name
+-Kmus showing kernel header info
+-updating cursor with text
+-Kmus support \n text

@@ -12,7 +12,7 @@ section .text
 
 
 global start
-extern bda	        ;kmain is defined in the c file
+extern bda	        ;kmain is defined in the m++ file
 start:
   cli 			;block interrupts
   call bda
